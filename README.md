@@ -9,7 +9,7 @@ English | [简体中文](https://github.com/flben233/OsuToMalodyServer/blob/mast
 
 - [Usage](#Usage)
 - [Download](#Download)
-- [How to contribute](#How to contribute)
+- [Contribute](#Contribute)
 - [Maintainer](#Maintainer)
 - [License](#License)
 
@@ -60,7 +60,7 @@ malody:
 
 [@flben233](https://github.com/flben233)。
 
-## How to contribute
+## Contribute
 
 Welcome to your join！[Issue](https://github.com/flben233/OsuToMalodyServer/issues/new) or Pull Request.
 
