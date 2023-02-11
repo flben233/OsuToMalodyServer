@@ -1,5 +1,4 @@
 # OsuToMalodyServer
-An application that allow you to directly download osu!mania beatmaps from osu! offcial server in malody v.
 
 一个可以让你在malody v中直接从osu!官方服务器下载osu!mania谱面的程序/服务端，基于Spring Boot 3.0.2编写
 
