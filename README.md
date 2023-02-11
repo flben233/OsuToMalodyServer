@@ -10,6 +10,7 @@ English | [简体中文](https://github.com/flben233/OsuToMalodyServer/blob/mast
 - [Usage](#Usage)
 - [Download](#Download)
 - [How to contribute](#How to contribute)
+- [Maintainer](#Maintainer)
 - [License](#License)
 
 ## Usage
