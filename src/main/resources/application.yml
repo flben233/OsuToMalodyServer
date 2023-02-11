@@ -1,0 +1,28 @@
+server:
+  # 连接端口
+  port: 8080
+malody:
+  server:
+    api: 202208
+    min: 202103
+    # 欢迎词
+    welcome: Welcome to this osu! to MalodyV server
+    # 缓存路径，推荐设置绝对路径
+    tmp: D:\IdeaProjects\osu2malody-bridge\tmp
+    # 本服务端的完整URL(也就是malody连接用的地址)
+    url: http://localhost:8080
+    # 是否将所有谱面全部设置为stable
+    showAll: false
+  osu:
+    # 你的osu用户名
+    username: your_username
+    # 你的osu密码
+    password: your_password
+    # HTTP代理
+    proxy:
+      # 是否开启
+      enable: false
+      # 服务器地址
+      host: 127.0.0.1
+      # 服务器端口
+      port: 10809
