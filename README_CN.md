@@ -40,7 +40,7 @@ malody:
     username: your_username
     # 你的osu密码
     password: your_password
-    # HTTP代理
+    # HTTP代理，用于加速下载osu谱面
     proxy:
       # 是否开启
       enable: false
