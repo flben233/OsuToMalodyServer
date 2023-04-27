@@ -16,8 +16,7 @@ public class UrlUtil {
             return null;
         }
         HashMap<String, String> map = new HashMap<>();
-        String decode = URLDecoder.decode(url, StandardCharsets.UTF_8);
-        String[] split = decode.split("&");
+        String[] split = url.split("&");
         for (int i = 0; i < split.length; i++) {
             String[] split1;
             if (i == 0) {
@@ -26,7 +25,7 @@ public class UrlUtil {
             } else {
                 split1 = split[i].split("=");
             }
-            map.put(split1[0], split1[1]);
+            map.put(URLDecoder.decode(split1[0], StandardCharsets.UTF_8), URLDecoder.decode(split1[0], StandardCharsets.UTF_8));
         }
         return map;
     }
