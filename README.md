@@ -37,6 +37,8 @@ malody:
     url: 
     # If set all beatmaps' status to stable
     showAll: false
+    # Enable the osz file caching
+    saveTemp: true
   osu:
     # Your osu! username
     username: your_username
