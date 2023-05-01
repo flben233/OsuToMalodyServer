@@ -3,14 +3,15 @@ package org.shirakawatyu.osu2malodybridge.service.impl;
 
 import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.io.IoUtil;
+import cn.hutool.core.thread.ThreadUtil;
 import cn.hutool.extra.compress.extractor.StreamExtractor;
 import com.alibaba.fastjson2.JSONArray;
 import com.alibaba.fastjson2.JSONObject;
-import jakarta.servlet.ServletOutputStream;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 import org.apache.hc.core5.http.HttpHeaders;
 import org.shirakawatyu.osu2malodybridge.pojo.*;
+import org.shirakawatyu.osu2malodybridge.service.DownloadService;
 import org.shirakawatyu.osu2malodybridge.service.StoreService;
 import org.shirakawatyu.osu2malodybridge.util.OsuUtil;
 import org.shirakawatyu.osu2malodybridge.util.Requests;
@@ -22,11 +23,9 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
-import java.io.*;
-import java.net.InetSocketAddress;
-import java.net.Proxy;
-import java.net.URL;
-import java.net.URLConnection;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
@@ -38,6 +37,8 @@ import java.util.logging.Logger;
 public class StoreServiceImpl implements StoreService {
 
     @Autowired
+    DownloadService downloadService;
+    @Autowired
     RestTemplate restTemplate;
     @Autowired
     OsuUtil osuUtil;
@@ -47,6 +48,8 @@ public class StoreServiceImpl implements StoreService {
     String tmpPath;
     @Value("${malody.server.url}")
     String serverUrl;
+    @Value("${malody.server.saveTemp}")
+    boolean saveTemp;
     Logger log = Logger.getLogger("o.s.o.s.i.StoreServiceImpl");
     @Override
     public StoreList<Song> search(String word, int from, int beta, HttpSession session) {
@@ -128,11 +131,9 @@ public class StoreServiceImpl implements StoreService {
         // 构造列表并返回
         session.setAttribute("cid", Integer.toString(cid));
         String downloadUrl = UrlUtil.stripEndSlash(serverUrl) + "/api/store/d";
-        items.add(new DownloadItem("FLAG", "0", UrlUtil.getUrl(downloadUrl, "type", "0")));
         items.add(new DownloadItem(cid + ".osu", "0", UrlUtil.getUrl(downloadUrl, "type", "1")));
         items.add(new DownloadItem("audio.mp3", "0", UrlUtil.getUrl(downloadUrl, "type", "2")));
         items.add(new DownloadItem("bg.jpg", "0", UrlUtil.getUrl(downloadUrl, "type", "3")));
-        FileUtil.del(tmpPath + File.separator + cid);
         downloadList.setItems(items);
         return downloadList;
     }
@@ -147,66 +148,56 @@ public class StoreServiceImpl implements StoreService {
             path.mkdirs();
         }
         try {
-            if (type == 0) {
-                log.log(Level.INFO, "正在下载osz源文件");
-                downloadChartSet(link, cid, response);
-            } else if (type == 1) {
-                log.log(Level.INFO, "正在发送osu文件");
-                sendOsuFile(cid, response);
+            if (type == 1) {
+                sendOsuFile(link, cid, response);
             } else if (type == 2) {
                 // 音乐文件可能为ogg格式
-                log.log(Level.INFO, "正在发送mp3文件");
                 if (!sendRes("mp3", cid, response)) {
                     sendRes("ogg", cid, response);
                 }
             } else if (type == 3) {
                 // 背景可能为jpeg格式
-                log.log(Level.INFO, "正在发送jpg文件");
                 if (!sendRes("jpg", cid, response)) {
                     sendRes("jpeg", cid, response);
                 }
+                FileUtil.del(workPath);
             }
-            log.log(Level.INFO, "完成");
         }catch (IOException e) {
-            FileUtil.del(workPath);
             throw new RuntimeException(e);
         }
     }
 
-    public void downloadChartSet(String link, String cid, HttpServletResponse response) throws IOException {
-        String workPath = tmpPath + File.separator + cid + File.separator;
+    public void downloadChartSet(String link, String cid) {
         // 下载osz源文件
-        URL url = new URL(link);
         Map<String, String> params = UrlUtil.getParams(link);
-        URLConnection urlConnection = null;
-        if (httpProxy.isEnable()) {
-            Proxy proxy = new Proxy(Proxy.Type.HTTP, new InetSocketAddress(httpProxy.getHost(), httpProxy.getPort()));
-            urlConnection = url.openConnection(proxy);
-        } else {
-            urlConnection = url.openConnection();
-        }
-        InputStream inputStream = urlConnection.getInputStream();
         String fileName = StringUtil.stripInvalid(params.get("fs"));
-        File osz = new File(workPath + fileName);
-        if (!osz.exists()) {
-            osz.createNewFile();
+        String downloadPath = tmpPath + File.separator + "osz" + File.separator;
+        File path = new File(downloadPath);
+        if (!path.exists()) {
+            path.mkdirs();
         }
-        FileOutputStream fs = new FileOutputStream(osz);
-        IoUtil.copy(inputStream, fs);
-        fs.close();
-
+        File osz = new File(downloadPath + fileName);
+        if (!osz.exists()) {
+            downloadService.downloadOsz(link, cid, osz);
+            log.log(Level.INFO, fileName + "下载并解压完成");
+        }
         // 解压
-        StreamExtractor streamExtractor = new StreamExtractor(StandardCharsets.UTF_8, new File(workPath + fileName));
-        streamExtractor.extract(new File(workPath));
-        log.log(Level.INFO, "osz文件下载并解压完成");
+        File workPath = new File(tmpPath + File.separator + cid);
+        // 如果文件被占用则等待，这里的renameTo用于判断osz文件是否被占用
+        while (workPath.exists() || !osz.renameTo(osz)) {
+            ThreadUtil.sleep(100);
+        }
+        StreamExtractor streamExtractor = new StreamExtractor(StandardCharsets.UTF_8, osz);
+        streamExtractor.extract(workPath);
+        streamExtractor.close();
 
-        // 发送完成信号
-        ServletOutputStream outputStream = response.getOutputStream();
-        outputStream.write(new byte[1024]);
-        outputStream.close();
+        // 如果未开启缓存则把osz文件删了
+        if (!saveTemp) {
+            osz.delete();
+        }
     }
 
-    public boolean sendRes(String type, String cid, HttpServletResponse response) throws IOException {
+    private boolean sendRes(String type, String cid, HttpServletResponse response) throws IOException {
         List<File> files = FileUtil.loopFiles(tmpPath + File.separator + cid);
         File res = null;
         for (File file : files) {
@@ -218,15 +209,19 @@ public class StoreServiceImpl implements StoreService {
         if (res == null) {
             return false;
         }
-        IoUtil.copy(new FileInputStream(res), response.getOutputStream());
+        FileInputStream stream = new FileInputStream(res);
+        IoUtil.copy(stream, response.getOutputStream());
+        stream.close();
         return true;
     }
 
-    public void sendOsuFile(String cid, HttpServletResponse response) throws IOException {
+    private void sendOsuFile(String link, String cid, HttpServletResponse response) throws IOException {
+        downloadChartSet(link, cid);
         List<File> files = FileUtil.loopFiles(tmpPath + File.separator + cid);
         File osu = null;
         for (File file : files) {
-           if ("osu".equals(FileUtil.getSuffix(file))) {
+            String suffix = FileUtil.getSuffix(file);
+            if ("osu".equals(suffix)) {
                if (cid.equals(OsuUtil.getOsuFileCid(file))) {
                    osu = file;
                    break;
@@ -236,8 +231,16 @@ public class StoreServiceImpl implements StoreService {
         if (osu == null) {
             return;
         }
-        OsuUtil.setOsuFileValue("AudioFilename", "audio.mp3", osu);
-        IoUtil.copy(new FileInputStream(osu), response.getOutputStream());
+        for (File file : files) {
+            String suffix = FileUtil.getSuffix(file);
+            if ("jpg".equals(suffix) || "jpeg".equals(suffix)){
+                OsuUtil.setOsuFileValue(file.getName(), "bg.jpg", osu);
+            } else if ("mp3".equals(suffix) || "ogg".equals(suffix)) {
+                OsuUtil.setOsuFileValue(file.getName(), "audio.mp3", osu);
+            }
+        }
+        FileInputStream stream = new FileInputStream(osu);
+        IoUtil.copy(stream, response.getOutputStream());
+        stream.close();
     }
-
 }

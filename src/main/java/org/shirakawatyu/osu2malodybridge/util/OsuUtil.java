@@ -54,7 +54,7 @@ public class OsuUtil {
      * @param m 对应官网的模式，3代表mania
      * @param sort 对应官网的排序方式
      * @param q 查询字符串，对应官网的搜索栏
-     * @param c 对应官网搜索页面的“常规一栏”
+     * @param c 对应官网搜索页面的“常规“一栏
      * @return 搜到的谱面，为空时返回null
      */
     public JSONArray osuSearch(String m, String s, String sort, String q, String c, HttpSession session) {
@@ -80,10 +80,8 @@ public class OsuUtil {
         if (jsonObject1 == null) {
             return null;
         }
-        if (!q.equals("")) {
-            session.setAttribute("cursor_string", jsonObject1.getString("cursor_string"));
-            session.setAttribute("query", q);
-        }
+        session.setAttribute("cursor_string", jsonObject1.getString("cursor_string"));
+        session.setAttribute("query", q);
         return jsonObject1.getJSONArray("beatmapsets");
     }
 
@@ -143,7 +141,7 @@ public class OsuUtil {
             JSONObject jsonObject = beatMapSets.getJSONObject(i);
             songList.add(new Song(
                     jsonObject.getIntValue("id"),
-                    JSON.parseObject(jsonObject.getString("covers")).getString("cover"),
+                    JSON.parseObject(jsonObject.getString("covers")).getString("list@2x"),
                     getLength(jsonObject),
                     jsonObject.getDouble("bpm"),
                     jsonObject.getString("title"),
@@ -181,18 +179,17 @@ public class OsuUtil {
     }
 
     /**
-     * 修改.osu文件中某个键对应的值
-     * @param key 键
-     * @param value 值
+     * 替换文件中某个值
+     * @param oldValue 旧值
+     * @param newValue 新值
      * @param file .osu文件
      */
-    public static void setOsuFileValue(String key, String value, File file) {
+    public static void setOsuFileValue(String oldValue, String newValue, File file) {
         List<String> strings = FileUtil.readLines(file, StandardCharsets.UTF_8);
         for (int i = 0; i < strings.size(); i++) {
             String string = strings.get(i);
-            if (string.contains(key)) {
-                string = string.substring(0, string.indexOf(":") + 1);
-                string += value;
+            if (string.contains(oldValue)) {
+                string = string.replace(oldValue, newValue);
                 strings.set(i, string);
                 break;
             }

@@ -25,7 +25,7 @@ public class UrlUtil {
             } else {
                 split1 = split[i].split("=");
             }
-            map.put(URLDecoder.decode(split1[0], StandardCharsets.UTF_8), URLDecoder.decode(split1[0], StandardCharsets.UTF_8));
+            map.put(URLDecoder.decode(split1[0], StandardCharsets.UTF_8), URLDecoder.decode(split1[1], StandardCharsets.UTF_8));
         }
         return map;
     }

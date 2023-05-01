@@ -40,7 +40,7 @@ public class ChartStoreController {
     }
 
     @GetMapping("/api/store/query")
-    public StoreList<Song> query(Integer sid, Integer cid,HttpSession session) {
+    public StoreList<Song> query(Integer sid, Integer cid, HttpSession session) {
         if (sid != null) {
             return storeService.search(Integer.toString(sid), 0, 1, session);
         } else {
@@ -56,14 +56,20 @@ public class ChartStoreController {
         return storeService.chartList(sid, from, session);
     }
 
+    /**
+     * 获取谱面下载链接的接口
+     * @param cid 谱面id
+     * @return DownloadList
+     * @author ShirakawaTyu
+     */
     @GetMapping("/api/store/download")
     public DownloadList download(int cid, HttpSession session) {
         return storeService.download(cid, session);
     }
 
     /**
-     * 下载谱面的接口
-     * @param type: 0: 准备就绪标志, 1: osu文件, 2: mp3文件, 3: jpg文件
+     * 下载谱面的链接
+     * @param type: 1: osu文件, 2: mp3文件, 3: jpg文件
      */
     @GetMapping("/api/store/d")
     public void down(@RequestParam("type") int type, HttpServletResponse response, HttpSession session) {
