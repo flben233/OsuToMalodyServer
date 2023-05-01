@@ -34,6 +34,8 @@ malody:
     url: 
     # 是否将所有谱面全部设置为stable
     showAll: false
+    # 是否开启osz文件缓存
+    saveTemp: true
   osu:
     # 你的osu用户名
     username: your_username
