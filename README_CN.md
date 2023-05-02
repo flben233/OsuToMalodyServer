@@ -15,7 +15,7 @@
 ### 一般安装
 
 1. 安装`JDK17`并配置好环境变量
-2. 下载[预构建版本](https://github.com/flben233OsuToMalodyServer/releases)
+2. 下载[预构建版本](https://github.com/flben233/OsuToMalodyServer/releases)
 3. 解压压缩包
 4. 按照以下说明填写`application.yml`
 ```yaml
@@ -56,7 +56,7 @@ malody:
 
 ## 预构建版本下载
 
-[预构建版本](https://github.com/flben233OsuToMalodyServer/releases)
+[预构建版本](https://github.com/flben233/OsuToMalodyServer/releases)
 
 ## 维护者
 
