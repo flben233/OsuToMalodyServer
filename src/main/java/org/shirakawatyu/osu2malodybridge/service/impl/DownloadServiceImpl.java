@@ -35,29 +35,26 @@ public class DownloadServiceImpl implements org.shirakawatyu.osu2malodybridge.se
      */
     @Override
     public void downloadOsz(String link, String cid, File osz) {
-        InputStream inputStream = null;
         downloadList.add(link);
+        URLConnection urlConnection = null;
         try {
             URL url = new URL(link);
-            URLConnection urlConnection = null;
             if (httpProxy.isEnable()) {
                 Proxy proxy = new Proxy(Proxy.Type.HTTP, new InetSocketAddress(httpProxy.getHost(), httpProxy.getPort()));
                 urlConnection = url.openConnection(proxy);
             } else {
                 urlConnection = url.openConnection();
             }
-            inputStream = urlConnection.getInputStream();
         } catch (IOException e) {
             downloadList.remove(link);
             throw new RuntimeException(e);
         }
-        try {
+        try (InputStream inputStream = urlConnection.getInputStream();
+             FileOutputStream fs = new FileOutputStream(osz)) {
             if (!osz.exists()) {
                 osz.createNewFile();
             }
-            FileOutputStream fs = new FileOutputStream(osz);
             IoUtil.copy(inputStream, fs);
-            fs.close();
         } catch (Exception e) {
             osz.delete();
             downloadList.remove(link);

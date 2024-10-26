@@ -158,20 +158,24 @@ public class OsuUtil {
      */
     public static String getOsuFileCid(File file) {
         BufferedReader reader = FileUtil.getUtf8Reader(file);
-        while (true) {
-            String line = null;
-            try {
-                if (!reader.ready()) {
-                    break;
+        try (reader) {
+            while (true) {
+                String line = null;
+                try {
+                    if (!reader.ready()) {
+                        break;
+                    }
+                    line = reader.readLine();
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
                 }
-                line = reader.readLine();
-            } catch (IOException e) {
-                throw new RuntimeException(e);
+                int beatmapID = line.indexOf("BeatmapID");
+                if (beatmapID != -1) {
+                    return line.split(":")[1];
+                }
             }
-            int beatmapID = line.indexOf("BeatmapID");
-            if (beatmapID != -1) {
-                return line.split(":")[1];
-            }
+        } catch (IOException e) {
+            throw new RuntimeException(e);
         }
         return null;
     }

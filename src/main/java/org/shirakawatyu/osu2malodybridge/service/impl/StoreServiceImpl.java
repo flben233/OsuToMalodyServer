@@ -26,12 +26,14 @@ import org.springframework.web.client.RestTemplate;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.zip.ZipFile;
 
 @Service
 public class StoreServiceImpl implements StoreService {
@@ -43,6 +45,8 @@ public class StoreServiceImpl implements StoreService {
     @Autowired
     OsuUtil osuUtil;
     @Autowired
+    HttpSession session;
+    @Autowired
     HttpProxy httpProxy;
     @Value("${malody.server.tmp}")
     String tmpPath;
@@ -51,6 +55,7 @@ public class StoreServiceImpl implements StoreService {
     @Value("${malody.server.saveTemp}")
     boolean saveTemp;
     Logger log = Logger.getLogger("o.s.o.s.i.StoreServiceImpl");
+
     @Override
     public StoreList<Song> search(String word, int from, int beta, HttpSession session) {
         JSONArray beatMapSets;
@@ -123,12 +128,9 @@ public class StoreServiceImpl implements StoreService {
             return downloadList;
         }
 
-        // 从官网获取下载链接
-        ResponseEntity<String> response = Requests.get("https://osu.ppy.sh/beatmapsets/" + sid + "/download", "https://osu.ppy.sh/beatmapsets", restTemplate);
         ArrayList<DownloadItem> items = new ArrayList<>();
-        // 下载链接包含在响应头的location中
-        session.setAttribute("link", response.getHeaders().getFirst(HttpHeaders.LOCATION));
         // 构造列表并返回
+        session.setAttribute("sid", Integer.toString(sid));
         session.setAttribute("cid", Integer.toString(cid));
         String downloadUrl = UrlUtil.stripEndSlash(serverUrl) + "/api/store/d";
         items.add(new DownloadItem(cid + ".osu", "0", UrlUtil.getUrl(downloadUrl, "type", "1")));
@@ -140,37 +142,32 @@ public class StoreServiceImpl implements StoreService {
 
     @Override
     public void sendChartFile(int type, HttpServletResponse response, HttpSession session) {
+        String sid = (String) session.getAttribute("sid");
         String cid = (String) session.getAttribute("cid");
-        String link = (String) session.getAttribute("link");
-        String workPath = tmpPath + File.separator + cid;
-        File path = new File(workPath);
-        if (!path.exists()) {
-            path.mkdirs();
-        }
+        String link = "https://catboy.best/d/" + sid;
         try {
             if (type == 1) {
-                sendOsuFile(link, cid, response);
+                sendOsuFile(link, sid, cid, response);
             } else if (type == 2) {
                 // 音乐文件可能为ogg格式
-                if (!sendRes("mp3", cid, response)) {
-                    sendRes("ogg", cid, response);
+                if (!sendRes("mp3", sid, response)) {
+                    sendRes("ogg", sid, response);
                 }
             } else if (type == 3) {
                 // 背景可能为jpeg格式
-                if (!sendRes("jpg", cid, response)) {
-                    sendRes("jpeg", cid, response);
+                if (!sendRes("jpg", sid, response)) {
+                    sendRes("jpeg", sid, response);
                 }
-                FileUtil.del(workPath);
+                FileUtil.del(workingPath(sid));
             }
         }catch (IOException e) {
             throw new RuntimeException(e);
         }
     }
 
-    public void downloadChartSet(String link, String cid) {
+    public void downloadChartSet(String link, String sid) {
         // 下载osz源文件
-        Map<String, String> params = UrlUtil.getParams(link);
-        String fileName = StringUtil.stripInvalid(params.get("fs"));
+        String fileName = sid + ".osz";
         String downloadPath = tmpPath + File.separator + "osz" + File.separator;
         File path = new File(downloadPath);
         if (!path.exists()) {
@@ -178,18 +175,21 @@ public class StoreServiceImpl implements StoreService {
         }
         File osz = new File(downloadPath + fileName);
         if (!osz.exists()) {
-            downloadService.downloadOsz(link, cid, osz);
-            log.log(Level.INFO, fileName + "下载并解压完成");
+            log.log(Level.INFO, "开始下载" + fileName);
+            downloadService.downloadOsz(link, sid, osz);
+            log.log(Level.INFO, fileName + "下载完成");
         }
         // 解压
-        File workPath = new File(tmpPath + File.separator + cid);
+        File workPath = new File(workingPath(sid));
         // 如果文件被占用则等待，这里的renameTo用于判断osz文件是否被占用
-        while (workPath.exists() || !osz.renameTo(osz)) {
+        while (workPath.exists() || !osz.canWrite()) {
             ThreadUtil.sleep(100);
         }
-        StreamExtractor streamExtractor = new StreamExtractor(StandardCharsets.UTF_8, osz);
-        streamExtractor.extract(workPath);
-        streamExtractor.close();
+        try (StreamExtractor extractor = new StreamExtractor(StandardCharsets.UTF_8, osz)) {
+            extractor.extract(workPath);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
 
         // 如果未开启缓存则把osz文件删了
         if (!saveTemp) {
@@ -197,8 +197,8 @@ public class StoreServiceImpl implements StoreService {
         }
     }
 
-    private boolean sendRes(String type, String cid, HttpServletResponse response) throws IOException {
-        List<File> files = FileUtil.loopFiles(tmpPath + File.separator + cid);
+    private boolean sendRes(String type, String sid, HttpServletResponse response) throws IOException {
+        List<File> files = FileUtil.loopFiles(workingPath(sid));
         File res = null;
         for (File file : files) {
             if (FileUtil.getSuffix(file).equals(type)){
@@ -209,15 +209,15 @@ public class StoreServiceImpl implements StoreService {
         if (res == null) {
             return false;
         }
-        FileInputStream stream = new FileInputStream(res);
-        IoUtil.copy(stream, response.getOutputStream());
-        stream.close();
+        try (FileInputStream stream = new FileInputStream(res)) {
+            IoUtil.copy(stream, response.getOutputStream());
+        }
         return true;
     }
 
-    private void sendOsuFile(String link, String cid, HttpServletResponse response) throws IOException {
-        downloadChartSet(link, cid);
-        List<File> files = FileUtil.loopFiles(tmpPath + File.separator + cid);
+    private void sendOsuFile(String link, String sid, String cid, HttpServletResponse response) throws IOException {
+        downloadChartSet(link, sid);
+        List<File> files = FileUtil.loopFiles(workingPath(sid));
         File osu = null;
         for (File file : files) {
             String suffix = FileUtil.getSuffix(file);
@@ -239,8 +239,12 @@ public class StoreServiceImpl implements StoreService {
                 OsuUtil.setOsuFileValue(file.getName(), "audio.mp3", osu);
             }
         }
-        FileInputStream stream = new FileInputStream(osu);
-        IoUtil.copy(stream, response.getOutputStream());
-        stream.close();
+        try (FileInputStream stream = new FileInputStream(osu)) {
+            IoUtil.copy(stream, response.getOutputStream());
+        }
+    }
+
+    private String workingPath(String sid) {
+        return tmpPath + File.separator + session.getId() + File.separator + sid;
     }
 }
