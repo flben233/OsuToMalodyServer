@@ -4,14 +4,26 @@ import org.springframework.http.*;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestTemplate;
+import java.util.Map;
 
 /**
- * @description: 封装的发送请求
+ * 封装的发送请求
  * @author ShirakawaTyu
  * @date: 2022/10/1 17:45
  */
 
 public class Requests {
+    private static final Map<String, String> HEADERS = Map.of(
+            "User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.3",
+            "Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
+            "Accept-Encoding", "gzip, deflate, sdch",
+            "Accept-Language", "zh-CN,zh;q=0.8",
+            "Connection", "keep-alive",
+            "Upgrade-Insecure-Requests", "1"
+    );
+    private static String token = "";
+
+
     /**
      * 本方法用于发起get请求，本质上是对RestTemplate的封装
      * @param url 要请求的URL
@@ -25,6 +37,10 @@ public class Requests {
         if(!"".equals(referer)) {
             headers.set("referer", referer);
         }
+        if (!"".equals(token)) {
+            headers.set("Authorization", "Bearer " + token);
+        }
+        HEADERS.forEach(headers::add);
         MultiValueMap<String, String> map1= new LinkedMultiValueMap<>();
         HttpEntity<MultiValueMap<String, String>> httpEntity1 = new HttpEntity<>(map1, headers);
 
@@ -44,8 +60,20 @@ public class Requests {
         if(!"".equals(referer)) {
             headers.set("referer", referer);
         }
+        if (!"".equals(token)) {
+            headers.set("Authorization", "Bearer " + token);
+        }
+        HEADERS.forEach(headers::add);
         HttpEntity<MultiValueMap<String, String>> httpEntity = new HttpEntity<>(data, headers);
         return restTemplate.exchange(url, HttpMethod.POST, httpEntity, String.class);
+    }
+
+    public static void setToken(String token) {
+        Requests.token = token;
+    }
+
+    public static String getToken() {
+        return Requests.token;
     }
 
 }

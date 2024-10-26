@@ -17,6 +17,8 @@ import org.apache.hc.core5.http.config.Registry;
 import org.apache.hc.core5.http.config.RegistryBuilder;
 import org.apache.hc.core5.http.protocol.HttpContext;
 import org.apache.hc.core5.util.Timeout;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.client.HttpComponentsClientHttpRequestFactory;
@@ -29,9 +31,11 @@ import java.net.URI;
 import java.security.cert.X509Certificate;
 @Configuration
 public class RestTemplateConfig {
-    @Bean
-    public RestTemplate restTemplate(BasicCookieStore basicCookieStore) {
+    @Autowired
+    BasicCookieStore basicCookieStore;
 
+    @Bean
+    public RestTemplate restTemplate() {
         HttpComponentsClientHttpRequestFactory factory = new HttpComponentsClientHttpRequestFactory();
         RequestConfig requestConfig = RequestConfig.custom()
                 .setConnectionRequestTimeout(Timeout.ofSeconds(2))
