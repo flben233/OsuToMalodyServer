@@ -18,7 +18,7 @@ English | [简体中文](https://github.com/flben233/OsuToMalodyServer/blob/mast
 ### Normally Install
 
 1. Install `JDK17` and configrate your environment variable
-2. Download [PreBuild](https://github.com/flben233OsuToMalodyServer/releases)
+2. Download [PreBuild](https://github.com/flben233/OsuToMalodyServer/releases)
 3. Unzip the package
 4. Fill out `application.yml` follow the guidance below
 ```yaml
@@ -37,6 +37,8 @@ malody:
     url: 
     # If set all beatmaps' status to stable
     showAll: false
+    # Enable the osz file caching
+    saveTemp: true
   osu:
     # Your osu! username
     username: your_username
@@ -54,7 +56,7 @@ malody:
 
 ## Download
 
-[PreBuild](https://github.com/flben233OsuToMalodyServer/releases)
+[PreBuild](https://github.com/flben233/OsuToMalodyServer/releases)
 
 ## Maintainer
 
