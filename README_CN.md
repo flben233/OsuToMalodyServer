@@ -14,6 +14,7 @@
 
 ### 一般安装
 
+0. 在[这里](https://osu.ppy.sh/home/account/edit#legacy-api)创建一个OAuth Application
 1. 安装`JDK17`并配置好环境变量
 2. 下载[预构建版本](https://github.com/flben233/OsuToMalodyServer/releases)
 3. 解压压缩包
@@ -37,10 +38,10 @@ malody:
     # 是否开启osz文件缓存
     saveTemp: true
   osu:
-    # 你的osu用户名
-    username: your_username
-    # 你的osu密码
-    password: your_password
+    # 你刚刚创建的OAuth Application的Client ID
+    clientID: 
+    # 你刚刚创建的OAuth Application的Client Secret
+    clientSecret: 
     # HTTP代理，用于加速下载osu谱面
     proxy:
       # 是否开启
