@@ -1,5 +1,6 @@
 # OsuToMalodyServer
-An application that allow you to directly download osu!mania beatmaps from osu! offcial server in malody v.
+
+An application that allow you to directly download osu!mania beatmaps from osu! mirror server `https://catboy.best/` in malody v.
 
 Based on Spring Boot 3.0.2
 
