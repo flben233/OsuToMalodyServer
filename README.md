@@ -17,6 +17,7 @@ English | [简体中文](https://github.com/flben233/OsuToMalodyServer/blob/mast
 
 ### Normally Install
 
+0. Create an OAuth application [here](https://osu.ppy.sh/home/account/edit#legacy-api)
 1. Install `JDK17` and configrate your environment variable
 2. Download [PreBuild](https://github.com/flben233/OsuToMalodyServer/releases)
 3. Unzip the package
@@ -40,10 +41,10 @@ malody:
     # Enable the osz file caching
     saveTemp: true
   osu:
-    # Your osu! username
-    username: your_username
-    # Your osu! password
-    password: your_password
+    # OSU! OAuth ClientID
+    clientID: 
+    # OSU! OAuth ClientSecret
+    clientSecret: 
     # HTTP Proxy that use to accelerate the beatmaps downloading in bad network environment
     proxy:
       enable: false
