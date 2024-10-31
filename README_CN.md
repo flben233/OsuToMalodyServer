@@ -1,6 +1,6 @@
 # OsuToMalodyServer
 
-一个可以让你在malody v中直接从osu!官方服务器下载osu!mania谱面的程序/服务端，基于Spring Boot 3.0.2编写
+一个可以让你在malody v中直接从osu!镜像服务器`https://catboy.best/`下载osu!mania谱面的程序/服务端，基于Spring Boot 3.0.2编写
 
 ## 内容列表
 
